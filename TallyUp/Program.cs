@@ -1,48 +1,67 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using TallyUp.Application.Mapping;
+using TallyUp.Application.Validators;
+using TallyUp.Configurations;
 using TallyUp.Domain.Entities;
 using TallyUp.Infrastructure.Data;
+using TallyUp.Infrastructure.Extensions;
+using TallyUp.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.ConfigureSwagger();
+builder.Services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
 {
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+
+    // Читаем параметр UseInMemoryDatabase (по умолчанию false)
+    var useInMemory = configuration.GetValue<bool>("UseInMemoryDatabase", false);
+
+    if (useInMemory)
+    {
+        options.UseInMemoryDatabase("TestDatabase");
+    }
+    else
+    {
+        options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+    }
 });
 
-builder.Services.AddIdentity<ApplicationUser, Role>()
+builder.Services
+    .AddIdentity<ApplicationUser, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-    {
-        Description = "Standard Authorization header using the Bearer scheme (\"bearer {token}\")",
-        In = ParameterLocation.Header,
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey
-    });
-
-    // options.OperationFilter<SecurityRequirementsOperationFilter>();
-});
+builder.Services.RegisterApplicationServices();
+builder.Services.ConfigureAuthentication(builder.Configuration);
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddAutoMapper(typeof(PollProfile));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using var scope = app.Services.CreateScope();
+await DbSeeder.SeedAsync(scope.ServiceProvider);
+
 if (app.Environment.IsDevelopment())
 {
-    
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
-
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
