@@ -39,6 +39,21 @@ public class PermissionServiceTests
         result.Should().BeFalse();
     }
 
+    [Fact]
+    public void HasPermission_UserWithCreatePollPermission_ShouldReturnTrue()
+    {
+        // Arrange
+        var claims = new List<Claim> { new Claim("permissions", "can-create-poll") };
+        var identity = new ClaimsIdentity(claims);
+        var user = new ClaimsPrincipal(identity);
+
+        // Act
+        var result = _permissionService.HasPermission(user, "can-create-poll");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+    
     [Fact] public void HasPermission_UserWithDeletePollPermission_ShouldReturnTrue()
     {
         // Arrange

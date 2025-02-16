@@ -40,7 +40,7 @@ public class PollsController : ControllerBase
     }
 
     [HttpPost]
-    [HasPermission(Permissions.EditPoll)]
+    [HasPermission(Permissions.CreatePoll)]
     [ProducesResponseType(typeof(PollDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PollDto>> CreatePoll([FromBody] CreatePollDto pollDto)

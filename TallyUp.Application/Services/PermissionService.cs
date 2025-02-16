@@ -8,7 +8,7 @@ public class PermissionService : IPermissionService
     private static readonly Dictionary<string, List<string>> RolePermissions = new()
     {
         { "User", new List<string> { "can-read-poll" } },
-        { "Moderator", new List<string> { "can-read-poll", "can-edit-poll" } },
+        { "Moderator", new List<string> { "can-read-poll", "can-edit-poll", "can-create-poll" } },
         { "Admin", new List<string> { "can-read-poll", "can-edit-poll", "can-delete-poll" } }
     };
     
